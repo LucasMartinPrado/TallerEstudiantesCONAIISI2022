@@ -1,7 +1,7 @@
 import pygame
 
 
-class Agent:
+class Individual:
     def __init__(self, position, width, height, moves, speed=3, color=(255, 0, 0)):
         self.start_x = position[0]+10
         self.start_y = position[1]+10

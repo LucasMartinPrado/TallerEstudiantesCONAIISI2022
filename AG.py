@@ -6,19 +6,51 @@ from deap import base
 from deap import creator
 from deap import tools
 
-
-def evaluate_agents(agents, level):
+def evaluate_population(population, level):
     list = []
-    # Evaluamos a cada agente
-    for agent in agents:
-        ###------Reemplazar------###
-        # Crear la funcion de aptitud utilizando datos del agente (agent) y del nivel (self.level)
-        fit = 0
-
-        ###------Fin Reemplazar------###
+    # Evaluamos a cada individuo
+    for indiv in population:
+        ###------Funcion de aptitud------###
+        fit = math.dist([indiv.x, indiv.y], level.finish_position())
+        ###------Fin de la funcion------###
         list.append((fit,))
     return list
 
+'''
+def evaluate_population(population, level):
+    list = []
+    # Evaluamos a cada individuo
+    for indiv in population:
+        ###------Funcion de aptitud------###
+        if indiv.finished:
+            fit = indiv.currentMove - len(indiv.moves)
+        elif indiv.alive:
+            fit = math.dist([indiv.x, indiv.y], level.finish_position())
+        else: #not finished, and not alive
+            fit = 1000000
+
+        ###------Fin de la funcion------###
+        list.append((fit,))
+    return list
+
+def evaluate_population(population, level): #Analizando varias posiciones
+    list = []
+    # Evaluamos a cada individuo
+    for indiv in population:
+       ###------Funcion de aptitud------###
+       if indiv.finished:
+           fit = indiv.currentMove - len(indiv.moves)
+       elif indiv.alive:
+           # Usando más de una posición para calcular aptitud
+           fit = sum([math.dist(level.finish_position(),
+    [indiv.historic_x[k], indiv.historic_y[k]]) - 10.00 for k, _ in enumerate(indiv.moves) if (k+1) % 50 == 0])
+       else:
+           fit = 15000.00 * (1 + len(indiv.moves) - indiv.currentMove)
+       ###------Fin de la funcion------###
+       list.append((fit,))
+    return list
+
+'''
 
 class AG:
     def __init__(self, level, population, ind_size):
@@ -50,7 +82,7 @@ class AG:
         self.toolbox.register("mate", tools.cxUniform, indpb=0.7)
         self.toolbox.register("mutate", tools.mutUniformInt, low=0, up=7, indpb=0.1)
         self.toolbox.register("select", tools.selTournament, tournsize=3)
-        self.toolbox.register("evaluate", evaluate_agents)
+        self.toolbox.register("evaluate", evaluate_population)
 
     def evolution_step(self):
         # CXPB  is the probability with which two individuals are crossed
@@ -58,8 +90,8 @@ class AG:
         CXPB, MUTPB = 0.5, 0.25
         pop = self.population
         self.generation += 1
-        # Select the next generation individuals with elitism (1)
-        offspring = self.toolbox.select(pop, len(pop) - 1)
+        # Select the next generation of individuals
+        offspring = self.toolbox.select(pop, len(pop))
         # Clone the selected individuals
         offspring = list(map(self.toolbox.clone, offspring))
 
@@ -78,9 +110,9 @@ class AG:
         # Save the population
         self.population = offspring
 
-    def fitness_evaluation(self, agents):
+    def fitness_evaluation(self, population):
         # Evaluate the individuals
-        fitnesses = self.toolbox.evaluate(agents, self.level)
+        fitnesses = self.toolbox.evaluate(population, self.level)
         for ind, fit in zip(self.population, fitnesses):
             ind.fitness.values = fit
         best_ind = tools.selBest(self.population, 1)[0]
